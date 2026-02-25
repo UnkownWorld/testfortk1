@@ -1,0 +1,265 @@
+{
+  "version": "2026.02.25",
+  "updated_at": "2026-02-25T00:00:00Z",
+  "providers": [
+    {
+      "id": "deepseek",
+      "displayName": "DeepSeek",
+      "loginUrl": "https://chat.deepseek.com",
+      "apiBaseUrl": "https://chat.deepseek.com/api/v0",
+      "enabled": true,
+      "models": [
+        {
+          "id": "deepseek-chat",
+          "displayName": "DeepSeek V4",
+          "features": ["STREAMING", "MULTI_TURN"],
+          "maxTokens": 16384,
+          "description": "DeepSeek V4 最新模型",
+          "enabled": true
+        },
+        {
+          "id": "deepseek-reasoner",
+          "displayName": "DeepSeek R2",
+          "features": ["STREAMING", "MULTI_TURN", "THINKING"],
+          "maxTokens": 16384,
+          "description": "DeepSeek R2 深度推理模型",
+          "enabled": true
+        },
+        {
+          "id": "deepseek-r2-distill",
+          "displayName": "DeepSeek R2 Distill",
+          "features": ["STREAMING", "MULTI_TURN", "THINKING"],
+          "maxTokens": 8192,
+          "description": "R2 蒸馏版，性价比高",
+          "enabled": true
+        },
+        {
+          "id": "deepseek-search",
+          "displayName": "DeepSeek 搜索",
+          "features": ["STREAMING", "MULTI_TURN", "WEB_SEARCH"],
+          "maxTokens": 8192,
+          "description": "联网搜索模型",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "claude",
+      "displayName": "Claude",
+      "loginUrl": "https://claude.ai",
+      "apiBaseUrl": "https://claude.ai/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "claude-sonnet-5",
+          "displayName": "Claude Sonnet 5",
+          "features": ["STREAMING", "MULTI_TURN", "VISION", "CODE_EXECUTION"],
+          "maxTokens": 32000,
+          "description": "Claude Sonnet 5 最新版",
+          "enabled": true
+        },
+        {
+          "id": "claude-opus-5",
+          "displayName": "Claude Opus 5",
+          "features": ["STREAMING", "MULTI_TURN", "VISION", "CODE_EXECUTION"],
+          "maxTokens": 32000,
+          "description": "Claude Opus 5 最强模型",
+          "enabled": true
+        },
+        {
+          "id": "claude-sonnet-4",
+          "displayName": "Claude Sonnet 4",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 16000,
+          "description": "Claude Sonnet 4 稳定版",
+          "enabled": true
+        },
+        {
+          "id": "claude-haiku-4",
+          "displayName": "Claude Haiku 4",
+          "features": ["STREAMING", "MULTI_TURN"],
+          "maxTokens": 8192,
+          "description": "Claude Haiku 4 快速响应",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "doubao",
+      "displayName": "豆包",
+      "loginUrl": "https://www.doubao.com",
+      "apiBaseUrl": "https://www.doubao.com/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "doubao-2-0-pro",
+          "displayName": "豆包 2.0 Pro",
+          "features": ["STREAMING", "MULTI_TURN"],
+          "maxTokens": 64000,
+          "description": "豆包 2.0 Pro 最新旗舰",
+          "enabled": true
+        },
+        {
+          "id": "doubao-2-0-lite",
+          "displayName": "豆包 2.0 Lite",
+          "features": ["STREAMING", "MULTI_TURN"],
+          "maxTokens": 32000,
+          "description": "豆包 2.0 Lite 轻量版",
+          "enabled": true
+        },
+        {
+          "id": "doubao-1-5-pro",
+          "displayName": "豆包 1.5 Pro",
+          "features": ["STREAMING", "MULTI_TURN"],
+          "maxTokens": 32000,
+          "description": "豆包 1.5 Pro 稳定版",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "kimi",
+      "displayName": "Kimi",
+      "loginUrl": "https://kimi.moonshot.cn",
+      "apiBaseUrl": "https://kimi.moonshot.cn/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "kimi-2-0",
+          "displayName": "Kimi 2.0",
+          "features": ["STREAMING", "MULTI_TURN", "WEB_SEARCH", "FILE_PROCESSING"],
+          "maxTokens": 256000,
+          "description": "Kimi 2.0 超长上下文",
+          "enabled": true
+        },
+        {
+          "id": "kimi-1-5",
+          "displayName": "Kimi 1.5",
+          "features": ["STREAMING", "MULTI_TURN", "WEB_SEARCH"],
+          "maxTokens": 128000,
+          "description": "Kimi 1.5 稳定版",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "zhipu",
+      "displayName": "智谱清言",
+      "loginUrl": "https://chatglm.cn",
+      "apiBaseUrl": "https://chatglm.cn/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "glm-5",
+          "displayName": "GLM-5",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 256000,
+          "description": "GLM-5 最新旗舰",
+          "enabled": true
+        },
+        {
+          "id": "glm-4-plus",
+          "displayName": "GLM-4 Plus",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 128000,
+          "description": "GLM-4 Plus 稳定版",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "qwen",
+      "displayName": "通义千问",
+      "loginUrl": "https://tongyi.aliyun.com",
+      "apiBaseUrl": "https://tongyi.aliyun.com/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "qwen-3-0-turbo",
+          "displayName": "通义千问 3.0 Turbo",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 128000,
+          "description": "通义千问 3.0 Turbo",
+          "enabled": true
+        },
+        {
+          "id": "qwen-3-0-max",
+          "displayName": "通义千问 3.0 Max",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 256000,
+          "description": "通义千问 3.0 Max 最强版",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "chatgpt",
+      "displayName": "ChatGPT",
+      "loginUrl": "https://chat.openai.com",
+      "apiBaseUrl": "https://chat.openai.com/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "gpt-5",
+          "displayName": "GPT-5",
+          "features": ["STREAMING", "MULTI_TURN", "VISION", "CODE_EXECUTION"],
+          "maxTokens": 128000,
+          "description": "GPT-5 最新模型",
+          "enabled": true
+        },
+        {
+          "id": "gpt-4.5-turbo",
+          "displayName": "GPT-4.5 Turbo",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 64000,
+          "description": "GPT-4.5 Turbo",
+          "enabled": true
+        },
+        {
+          "id": "o3-mini",
+          "displayName": "o3-mini",
+          "features": ["STREAMING", "MULTI_TURN", "THINKING"],
+          "maxTokens": 32000,
+          "description": "OpenAI o3-mini 推理模型",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "displayName": "Gemini",
+      "loginUrl": "https://gemini.google.com",
+      "apiBaseUrl": "https://gemini.google.com/api",
+      "enabled": true,
+      "models": [
+        {
+          "id": "gemini-2-5-pro",
+          "displayName": "Gemini 2.5 Pro",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 256000,
+          "description": "Gemini 2.5 Pro 最新版",
+          "enabled": true
+        },
+        {
+          "id": "gemini-2-5-flash",
+          "displayName": "Gemini 2.5 Flash",
+          "features": ["STREAMING", "MULTI_TURN", "VISION"],
+          "maxTokens": 128000,
+          "description": "Gemini 2.5 Flash 快速版",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "defaultProvider": "deepseek",
+  "defaultModels": {
+    "deepseek": "deepseek-chat",
+    "claude": "claude-sonnet-5",
+    "doubao": "doubao-2-0-pro",
+    "kimi": "kimi-2-0",
+    "zhipu": "glm-5",
+    "qwen": "qwen-3-0-turbo",
+    "chatgpt": "gpt-5",
+    "gemini": "gemini-2-5-pro"
+  }
+}
