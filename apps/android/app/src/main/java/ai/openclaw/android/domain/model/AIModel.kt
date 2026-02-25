@@ -4,6 +4,7 @@ package ai.openclaw.android.domain.model
  * AI 模型定义
  *
  * 定义各个提供商支持的模型及其特性
+ * 更新时间：2025年2月
  */
 enum class AIModel(
     val id: String,
@@ -13,74 +14,161 @@ enum class AIModel(
     val maxTokens: Int = 4096,
     val description: String = ""
 ) {
-    // DeepSeek 模型
-    DEEPSEEK_CHAT(
+    // ==================== DeepSeek 模型 ====================
+    // 最新模型 (2025)
+    DEEPSEEK_V3(
         id = "deepseek-chat",
-        displayName = "DeepSeek Chat",
+        displayName = "DeepSeek V3",
         provider = "deepseek",
         features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
-        maxTokens = 64000,
-        description = "通用对话模型，适合日常对话"
+        maxTokens = 8192,
+        description = "DeepSeek 最新 V3 模型，性能强大"
     ),
-    DEEPSEEK_REASONER(
+    DEEPSEEK_R1(
         id = "deepseek-reasoner",
         displayName = "DeepSeek R1",
         provider = "deepseek",
         features = setOf(ModelFeature.STREAMING, ModelFeature.THINKING, ModelFeature.MULTI_TURN),
-        maxTokens = 64000,
-        description = "深度思考模型，适合复杂推理"
+        maxTokens = 8192,
+        description = "DeepSeek R1 深度推理模型，适合复杂任务"
     ),
+    DEEPSEEK_R1_DISTILL_QWEN(
+        id = "deepseek-r1-distill-qwen",
+        displayName = "DeepSeek R1 Distill Qwen",
+        provider = "deepseek",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.THINKING, ModelFeature.MULTI_TURN),
+        maxTokens = 8192,
+        description = "R1 蒸馏版，基于 Qwen，性价比高"
+    ),
+    DEEPSEEK_R1_DISTILL_LLAMA(
+        id = "deepseek-r1-distill-llama",
+        displayName = "DeepSeek R1 Distill Llama",
+        provider = "deepseek",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.THINKING, ModelFeature.MULTI_TURN),
+        maxTokens = 8192,
+        description = "R1 蒸馏版，基于 Llama，开源可用"
+    ),
+    
+    // 联网搜索模型
     DEEPSEEK_SEARCH(
         id = "deepseek-search",
         displayName = "DeepSeek 搜索",
         provider = "deepseek",
         features = setOf(ModelFeature.STREAMING, ModelFeature.WEB_SEARCH, ModelFeature.MULTI_TURN),
-        maxTokens = 64000,
-        description = "联网搜索模型，可获取最新信息"
+        maxTokens = 8192,
+        description = "联网搜索模型，获取最新信息"
     ),
-    DEEPSEEK_R1_SEARCH(
-        id = "deepseek-r1-search",
-        displayName = "DeepSeek R1 搜索",
-        provider = "deepseek",
-        features = setOf(ModelFeature.STREAMING, ModelFeature.THINKING, ModelFeature.WEB_SEARCH, ModelFeature.MULTI_TURN),
-        maxTokens = 64000,
-        description = "深度思考 + 联网搜索"
+    
+    // ==================== Claude 模型 ====================
+    // Claude 4 系列 (2025 最新)
+    CLAUDE_SONNET_4(
+        id = "claude-sonnet-4-20250514",
+        displayName = "Claude Sonnet 4",
+        provider = "claude",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION, ModelFeature.CODE_EXECUTION),
+        maxTokens = 16000,
+        description = "Claude Sonnet 4，最新一代，性能卓越"
     ),
-
-    // Claude 模型
+    CLAUDE_OPUS_4(
+        id = "claude-opus-4-20250514",
+        displayName = "Claude Opus 4",
+        provider = "claude",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION, ModelFeature.CODE_EXECUTION),
+        maxTokens = 16000,
+        description = "Claude Opus 4，最强模型，适合复杂任务"
+    ),
+    
+    // Claude 3.7 系列
+    CLAUDE_3_7_SONNET(
+        id = "claude-3-7-sonnet-20250219",
+        displayName = "Claude 3.7 Sonnet",
+        provider = "claude",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION),
+        maxTokens = 16000,
+        description = "Claude 3.7 Sonnet，性能与速度平衡"
+    ),
+    
+    // Claude 3.5 系列
     CLAUDE_3_5_SONNET(
         id = "claude-3-5-sonnet-20241022",
         displayName = "Claude 3.5 Sonnet",
         provider = "claude",
         features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION),
-        maxTokens = 200000,
-        description = "最新 Claude 模型，性能强大"
+        maxTokens = 8192,
+        description = "Claude 3.5 Sonnet，经典稳定版本"
     ),
-    CLAUDE_3_OPUS(
-        id = "claude-3-opus-20240229",
-        displayName = "Claude 3 Opus",
-        provider = "claude",
-        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION),
-        maxTokens = 200000,
-        description = "Claude 最强模型"
-    ),
-    CLAUDE_3_HAIKU(
-        id = "claude-3-haiku-20240307",
-        displayName = "Claude 3 Haiku",
+    CLAUDE_3_5_HAIKU(
+        id = "claude-3-5-haiku-20241022",
+        displayName = "Claude 3.5 Haiku",
         provider = "claude",
         features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
-        maxTokens = 200000,
-        description = "快速响应，适合简单任务"
+        maxTokens = 8192,
+        description = "Claude 3.5 Haiku，快速响应"
     ),
-
-    // 豆包模型
+    
+    // ==================== 豆包模型 ====================
+    // 最新模型 (2025)
+    DOUBAO_1_5_PRO(
+        id = "doubao-1-5-pro-32k",
+        displayName = "豆包 1.5 Pro",
+        provider = "doubao",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
+        maxTokens = 32000,
+        description = "豆包 1.5 Pro，最新一代主力模型"
+    ),
+    DOUBAO_1_5_LITE(
+        id = "doubao-1-5-lite-32k",
+        displayName = "豆包 1.5 Lite",
+        provider = "doubao",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
+        maxTokens = 32000,
+        description = "豆包 1.5 Lite，轻量快速"
+    ),
+    
+    // 经典模型
     DOUBAO_PRO(
         id = "doubao-pro-32k",
         displayName = "豆包 Pro",
         provider = "doubao",
         features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
         maxTokens = 32000,
-        description = "豆包主力模型"
+        description = "豆包 Pro，经典稳定版本"
+    ),
+    DOUBAO_LITE(
+        id = "doubao-lite-32k",
+        displayName = "豆包 Lite",
+        provider = "doubao",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
+        maxTokens = 32000,
+        description = "豆包 Lite，快速响应"
+    ),
+    
+    // ==================== Kimi 模型 ====================
+    KIMI_1_5(
+        id = "kimi-1-5",
+        displayName = "Kimi 1.5",
+        provider = "kimi",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.WEB_SEARCH),
+        maxTokens = 128000,
+        description = "Kimi 1.5，超长上下文，联网搜索"
+    ),
+    
+    // ==================== 智谱模型 ====================
+    GLM_4_PLUS(
+        id = "glm-4-plus",
+        displayName = "GLM-4 Plus",
+        provider = "zhipu",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN, ModelFeature.VISION),
+        maxTokens = 128000,
+        description = "智谱 GLM-4 Plus，最新旗舰模型"
+    ),
+    GLM_4_AIR(
+        id = "glm-4-air",
+        displayName = "GLM-4 Air",
+        provider = "zhipu",
+        features = setOf(ModelFeature.STREAMING, ModelFeature.MULTI_TURN),
+        maxTokens = 8192,
+        description = "GLM-4 Air，快速响应"
     );
 
     /**
@@ -123,11 +211,20 @@ enum class AIModel(
          */
         fun getDefaultModel(providerId: String): AIModel {
             return when (providerId) {
-                "deepseek" -> DEEPSEEK_CHAT
-                "claude" -> CLAUDE_3_5_SONNET
-                "doubao" -> DOUBAO_PRO
-                else -> DEEPSEEK_CHAT
+                "deepseek" -> DEEPSEEK_V3
+                "claude" -> CLAUDE_SONNET_4
+                "doubao" -> DOUBAO_1_5_PRO
+                "kimi" -> KIMI_1_5
+                "zhipu" -> GLM_4_PLUS
+                else -> DEEPSEEK_V3
             }
+        }
+        
+        /**
+         * 获取所有提供商
+         */
+        fun getAllProviders(): List<String> {
+            return values().map { it.provider }.distinct()
         }
     }
 }
@@ -140,16 +237,18 @@ enum class ModelFeature {
     STREAMING,
     /** 多轮对话 */
     MULTI_TURN,
-    /** 深度思考 */
+    /** 深度思考/推理 */
     THINKING,
     /** 联网搜索 */
     WEB_SEARCH,
-    /** 视觉理解 */
+    /** 视觉理解/图像识别 */
     VISION,
     /** 工具调用 */
     TOOL_CALLING,
     /** 代码执行 */
-    CODE_EXECUTION
+    CODE_EXECUTION,
+    /** 文件处理 */
+    FILE_PROCESSING
 }
 
 /**

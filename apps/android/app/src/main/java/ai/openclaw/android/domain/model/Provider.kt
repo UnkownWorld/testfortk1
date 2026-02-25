@@ -4,6 +4,7 @@ package ai.openclaw.android.domain.model
  * AI 提供商枚举
  *
  * 定义支持的 AI 提供商及其配置
+ * 更新时间：2025年2月
  *
  * @property id 提供商唯一标识
  * @property displayName 显示名称
@@ -20,7 +21,7 @@ enum class Provider(
         id = "deepseek",
         displayName = "DeepSeek",
         loginUrl = "https://chat.deepseek.com",
-        apiBaseUrl = "https://chat.deepseek.com/api/v1"
+        apiBaseUrl = "https://chat.deepseek.com/api/v0"
     ),
     CLAUDE(
         id = "claude",
@@ -33,6 +34,18 @@ enum class Provider(
         displayName = "豆包",
         loginUrl = "https://www.doubao.com",
         apiBaseUrl = "https://www.doubao.com/api"
+    ),
+    KIMI(
+        id = "kimi",
+        displayName = "Kimi",
+        loginUrl = "https://kimi.moonshot.cn",
+        apiBaseUrl = "https://kimi.moonshot.cn/api"
+    ),
+    ZHIPU(
+        id = "zhipu",
+        displayName = "智谱清言",
+        loginUrl = "https://chatglm.cn",
+        apiBaseUrl = "https://chatglm.cn/api"
     );
 
     companion object {
