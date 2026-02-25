@@ -1,150 +1,130 @@
-import com.android.build.api.variant.impl.VariantOutputImpl
-
 plugins {
-  id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-  id("org.jetbrains.kotlin.plugin.compose")
-  id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
-  namespace = "ai.openclaw.android"
-  compileSdk = 36
+    namespace = "ai.openclaw.android"
+    compileSdk = 34
 
-  sourceSets {
-    getByName("main") {
-      assets.srcDir(file("../../shared/OpenClawKit/Sources/OpenClawKit/Resources"))
+    defaultConfig {
+        applicationId = "ai.openclaw.android"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-  }
 
-  defaultConfig {
-    applicationId = "ai.openclaw.android"
-    minSdk = 31
-    targetSdk = 36
-    versionCode = 202602190
-    versionName = "2026.2.19"
-    ndk {
-      // Support all major ABIs — native libs are tiny (~47 KB per ABI)
-      abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
+        }
     }
-  }
 
-  buildTypes {
-    release {
-      isMinifyEnabled = true
-      isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    debug {
-      isMinifyEnabled = false
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
-  }
 
-  buildFeatures {
-    compose = true
-    buildConfig = true
-  }
-
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-  }
-
-  packaging {
-    resources {
-      excludes += setOf(
-        "/META-INF/{AL2.0,LGPL2.1}",
-        "/META-INF/*.version",
-        "/META-INF/LICENSE*.txt",
-        "DebugProbesKt.bin",
-        "kotlin-tooling-metadata.json",
-      )
+    buildFeatures {
+        compose = true
     }
-  }
 
-  lint {
-    disable += setOf(
-      "GradleDependency",
-      "IconLauncherShape",
-      "NewerVersionAvailable",
-    )
-    warningsAsErrors = true
-  }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
 
-  testOptions {
-    unitTests.isIncludeAndroidResources = true
-  }
-}
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 
-androidComponents {
-  onVariants { variant ->
-    variant.outputs
-      .filterIsInstance<VariantOutputImpl>()
-      .forEach { output ->
-        val versionName = output.versionName.orNull ?: "0"
-        val buildType = variant.buildType
-
-        val outputFileName = "openclaw-${versionName}-${buildType}.apk"
-        output.outputFileName = outputFileName
-      }
-  }
-}
-kotlin {
-  compilerOptions {
-    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    allWarningsAsErrors.set(true)
-  }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
-  val composeBom = platform("androidx.compose:compose-bom:2025.12.00")
-  implementation(composeBom)
-  androidTestImplementation(composeBom)
+    // ============== 核心库 ==============
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-  implementation("androidx.core:core-ktx:1.17.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-  implementation("androidx.activity:activity-compose:1.12.2")
-  implementation("androidx.webkit:webkit:1.15.0")
+    // Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
-  implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.compose.material3:material3")
-  // material-icons-extended pulled in full icon set (~20 MB DEX). Only ~18 icons used.
-  // R8 will tree-shake unused icons when minify is enabled on release builds.
-  implementation("androidx.compose.material:material-icons-extended")
-  implementation("androidx.navigation:navigation-compose:2.9.6")
+    // ============== 网络层 ==============
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
 
-  debugImplementation("androidx.compose.ui:ui-tooling")
+    // ============== 依赖注入 ==============
+    implementation("com.google.dagger:hilt-android:2.50")
+    kapt("com.google.dagger:hilt-compiler:2.50")
 
-  // Material Components (XML theme + resources)
-  implementation("com.google.android.material:material:1.13.0")
+    // ============== 数据存储 ==============
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    // ============== 安全加密 ==============
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-  implementation("androidx.security:security-crypto:1.1.0")
-  implementation("androidx.exifinterface:exifinterface:1.4.2")
-  implementation("com.squareup.okhttp3:okhttp:5.3.2")
-  implementation("org.bouncycastle:bcprov-jdk18on:1.83")
+    // ============== 日志 ==============
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
-  // CameraX (for node.invoke camera.* parity)
-  implementation("androidx.camera:camera-core:1.5.2")
-  implementation("androidx.camera:camera-camera2:1.5.2")
-  implementation("androidx.camera:camera-lifecycle:1.5.2")
-  implementation("androidx.camera:camera-video:1.5.2")
-  implementation("androidx.camera:camera-view:1.5.2")
+    // ============== UI ==============
+    implementation(platform("androidx.compose:compose-bom:2024.01.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.6")
 
-  // Unicast DNS-SD (Wide-Area Bonjour) for tailnet discovery domains.
-  implementation("dnsjava:dnsjava:3.6.4")
+    // ============== Android Core ==============
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
-  testImplementation("junit:junit:4.13.2")
-  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-  testImplementation("io.kotest:kotest-runner-junit5-jvm:6.0.7")
-  testImplementation("io.kotest:kotest-assertions-core-jvm:6.0.7")
-  testImplementation("org.robolectric:robolectric:4.16")
-  testRuntimeOnly("org.junit.vintage:junit-vintage-engine:6.0.2")
+    // ============== 测试 ==============
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("app.cash.turbine:turbine:1.0.0")
+
+    // Android Instrumented Test
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("io.mockk:mockk-android:1.13.8")
+
+    // Debug
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
-tasks.withType<Test>().configureEach {
-  useJUnitPlatform()
+kapt {
+    correctErrorTypes = true
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
