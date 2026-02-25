@@ -1,5 +1,6 @@
 package ai.openclaw.android.data.remote.chat
 
+import ai.openclaw.android.data.remote.pow.DeepSeekPowSolver
 import ai.openclaw.android.domain.model.*
 import ai.openclaw.android.domain.repository.ChatOptions
 import ai.openclaw.android.domain.repository.IChatProvider
@@ -13,11 +14,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
-import okio.ByteString
 import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
-import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +24,12 @@ import javax.inject.Singleton
 /**
  * DeepSeek 聊天提供者
  *
- * 实现 DeepSeek Web API 的调用，支持流式响应和 PoW 挑战
+ * 实现 DeepSeek Web API 的调用，支持：
+ * - 流式响应
+ * - PoW 挑战计算
+ * - 多轮对话
+ * - 联网搜索
+ * - R1 深度思考
  */
 @Singleton
 class DeepSeekChatProvider @Inject constructor(
@@ -43,11 +47,18 @@ class DeepSeekChatProvider @Inject constructor(
     // 是否忙碌
     private val isBusyFlag = AtomicBoolean(false)
 
+    // PoW 求解器
+    private val powSolver = DeepSeekPowSolver()
+
     companion object {
-        private const val API_URL = "https://chat.deepseek.com/api/v1/chat/completions"
-        private const val MODEL = "deepseek-chat"
-        private const val REASONER_MODEL = "deepseek-reasoner"
-        private const val POW_DIFFICULTY = 5
+        private const val API_URL = "https://chat.deepseek.com/api/v0/chat/completions"
+        private const val CHAT_URL = "https://chat.deepseek.com/api/v0/chat"
+        private const val MODEL_CHAT = "deepseek-chat"
+        private const val MODEL_REASONER = "deepseek-reasoner"
+        
+        // App 版本（需要定期更新）
+        private const val APP_VERSION = "20241129.1"
+        private const val CLIENT_VERSION = "1.0.0-always"
     }
 
     override fun chat(
@@ -60,24 +71,39 @@ class DeepSeekChatProvider @Inject constructor(
         isBusyFlag.set(true)
 
         try {
-            // 1. 计算 PoW（如果需要）
-            val powAnswer = calculatePowIfNeeded(config)
-
+            // 1. 获取 PoW 挑战（如果需要）
+            val powResponse = fetchPowChallenge(config)
+            
             // 2. 构建请求体
-            val requestBody = buildRequestBody(messages, sessionId, powAnswer, options)
+            val requestBody = buildRequestBody(messages, sessionId, options)
 
-            // 3. 构建请求
+            // 3. 构建请求头
+            val headersBuilder = Headers.Builder()
+                .add("Accept", "*/*")
+                .add("Accept-Language", "en-US,en;q=0.9")
+                .add("Authorization", "Bearer ${config.bearerToken}")
+                .add("Content-Type", "application/json")
+                .add("Origin", "https://chat.deepseek.com")
+                .add("Referer", "https://chat.deepseek.com/")
+                .add("User-Agent", config.userAgent)
+                .add("x-app-version", APP_VERSION)
+                .add("x-client-locale", "en_US")
+                .add("x-client-platform", "web")
+                .add("x-client-version", CLIENT_VERSION)
+            
+            // 添加 PoW 响应
+            powResponse?.let {
+                headersBuilder.add("x-ds-pow-response", it)
+            }
+
+            // 4. 构建请求
             val request = Request.Builder()
-                .url(API_URL)
-                .header("Cookie", config.cookie)
-                .header("Authorization", "Bearer ${config.bearerToken}")
-                .header("Content-Type", "application/json")
-                .header("Accept", "text/event-stream")
-                .header("User-Agent", config.userAgent)
+                .url(CHAT_URL)
+                .headers(headersBuilder.build())
                 .post(requestBody.toRequestBody("application/json".toMediaType()))
                 .build()
 
-            // 4. 创建 SSE 事件源
+            // 5. 创建 SSE 事件源
             val factory = EventSources.createFactory(okHttpClient)
 
             val listener = object : EventSourceListener() {
@@ -92,14 +118,10 @@ class DeepSeekChatProvider @Inject constructor(
                         return
                     }
 
-                    when (type) {
-                        "message" -> {
-                            if (data == "[DONE]") {
-                                trySend(ChatChunk.done())
-                            } else {
-                                parseAndSendChunk(data)
-                            }
-                        }
+                    if (data == "[DONE]") {
+                        trySend(ChatChunk.done())
+                    } else {
+                        parseAndSendChunk(data)
                     }
                 }
 
@@ -115,7 +137,7 @@ class DeepSeekChatProvider @Inject constructor(
                     t: Throwable?,
                     response: Response?
                 ) {
-                    Timber.e(t, "SSE connection failed")
+                    Timber.e(t, "DeepSeek SSE connection failed")
                     isBusyFlag.set(false)
 
                     val errorCode = when (response?.code) {
@@ -123,6 +145,15 @@ class DeepSeekChatProvider @Inject constructor(
                         429 -> "RATE_LIMITED"
                         500, 502, 503 -> "SERVER_ERROR"
                         else -> "CONNECTION_ERROR"
+                    }
+
+                    // 检查是否需要 PoW
+                    response?.body?.string()?.let { body ->
+                        val powConfig = powSolver.extractChallenge(body)
+                        if (powConfig != null) {
+                            Timber.d("PoW challenge required")
+                            // TODO: 重试带 PoW 的请求
+                        }
                     }
 
                     val recoverable = response?.code == 429 ||
@@ -136,22 +167,53 @@ class DeepSeekChatProvider @Inject constructor(
                 }
             }
 
-            // 5. 开始请求
+            // 6. 开始请求
             currentEventSource = factory.newEventSource(request, listener)
 
-            // 6. 等待完成或中止
+            // 7. 等待完成或中止
             awaitClose {
                 aborted.set(true)
                 currentEventSource?.cancel()
                 isBusyFlag.set(false)
             }
         } catch (e: Exception) {
-            Timber.e(e, "Chat error")
+            Timber.e(e, "DeepSeek chat error")
             isBusyFlag.set(false)
             trySend(ChatChunk.error(
                 code = "CHAT_ERROR",
                 message = e.message ?: "Unknown error"
             ))
+        }
+    }
+
+    /**
+     * 获取 PoW 挑战
+     */
+    private suspend fun fetchPowChallenge(config: AuthConfig): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 尝试获取 PoW 挑战
+                val request = Request.Builder()
+                    .url("https://chat.deepseek.com/api/v0/chat/settings")
+                    .header("Authorization", "Bearer ${config.bearerToken}")
+                    .header("User-Agent", config.userAgent)
+                    .get()
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                val body = response.body?.string()
+                
+                // 解析 PoW 配置
+                body?.let {
+                    val powConfig = powSolver.extractChallenge(it)
+                    powConfig?.let { cfg ->
+                        powSolver.solve(cfg)
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to fetch PoW challenge")
+                null
+            }
         }
     }
 
@@ -164,10 +226,10 @@ class DeepSeekChatProvider @Inject constructor(
     override suspend fun validateConfig(config: AuthConfig): Result<Boolean> {
         return try {
             val request = Request.Builder()
-                .url("https://chat.deepseek.com/api/v1/user")
-                .header("Cookie", config.cookie)
+                .url("https://chat.deepseek.com/api/v0/users/me")
                 .header("Authorization", "Bearer ${config.bearerToken}")
                 .header("User-Agent", config.userAgent)
+                .header("x-app-version", APP_VERSION)
                 .get()
                 .build()
 
@@ -180,64 +242,17 @@ class DeepSeekChatProvider @Inject constructor(
     }
 
     override suspend fun getModels(config: AuthConfig): Result<List<String>> {
-        return Result.success(listOf(MODEL, REASONER_MODEL))
+        return Result.success(listOf(
+            MODEL_CHAT,
+            MODEL_REASONER,
+            "deepseek-search",      // 联网搜索
+            "deepseek-think",       // 深度思考
+            "deepseek-r1",          // R1 模型
+            "deepseek-r1-search"    // R1 + 联网搜索
+        ))
     }
 
     override fun isBusy(): Boolean = isBusyFlag.get()
-
-    /**
-     * 计算 PoW（如果需要）
-     */
-    private suspend fun calculatePowIfNeeded(config: AuthConfig): String? {
-        return withContext(Dispatchers.Default) {
-            try {
-                // 获取挑战
-                val challenge = fetchChallenge(config)
-
-                // 计算答案
-                var nonce = 0L
-                val target = "0".repeat(POW_DIFFICULTY)
-
-                while (!aborted.get() && nonce < Long.MAX_VALUE) {
-                    val input = "$nonce$challenge"
-                    val hash = sha3_256(input)
-
-                    if (hash.startsWith(target)) {
-                        return@withContext nonce.toString()
-                    }
-
-                    nonce++
-
-                    // 每 10000 次检查一次取消
-                    if (nonce % 10000 == 0L) {
-                        yield()
-                    }
-                }
-
-                null
-            } catch (e: Exception) {
-                Timber.w(e, "PoW calculation failed")
-                null
-            }
-        }
-    }
-
-    /**
-     * 获取 PoW 挑战
-     */
-    private fun fetchChallenge(config: AuthConfig): String {
-        // 简化实现：使用时间戳
-        return System.currentTimeMillis().toString()
-    }
-
-    /**
-     * SHA3-256 哈希
-     */
-    private fun sha3_256(input: String): String {
-        val md = MessageDigest.getInstance("SHA3-256")
-        val digest = md.digest(input.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }
-    }
 
     /**
      * 构建请求体
@@ -245,13 +260,16 @@ class DeepSeekChatProvider @Inject constructor(
     private fun buildRequestBody(
         messages: List<ChatMessage>,
         sessionId: String?,
-        powAnswer: String?,
         options: ChatOptions?
     ): String {
         val json = JSONObject().apply {
-            put("model", options?.model ?: MODEL)
-            put("stream", true)
-
+            // 模型选择
+            val modelName = when (options?.model) {
+                "deepseek-reasoner", "deepseek-r1", "deepseek-think" -> MODEL_REASONER
+                else -> MODEL_CHAT
+            }
+            put("model", modelName)
+            
             // 消息
             put("messages", JSONArray().apply {
                 messages.forEach { msg ->
@@ -262,20 +280,28 @@ class DeepSeekChatProvider @Inject constructor(
                 }
             })
 
-            // 会话 ID
+            // 会话 ID（用于多轮对话）
             sessionId?.let { put("conversation_id", it) }
 
-            // PoW 答案
-            powAnswer?.let { put("pow_answer", it) }
+            // 流式响应
+            put("stream", true)
 
-            // 温度
-            options?.temperature?.let { put("temperature", it) }
+            // 选项
+            options?.let { opt ->
+                opt.temperature?.let { put("temperature", it) }
+                opt.maxTokens?.let { put("max_tokens", it) }
+            }
 
-            // 最大 token
-            options?.maxTokens?.let { put("max_tokens", it) }
+            // 联网搜索
+            if (options?.model?.contains("search") == true) {
+                put("search_enabled", true)
+            }
 
-            // 思考模式
-            options?.thinking?.let { put("thinking", it) }
+            // 深度思考
+            if (options?.model?.contains("think") == true || 
+                options?.model?.contains("r1") == true) {
+                put("thinking_enabled", true)
+            }
         }
 
         return json.toString()
@@ -289,6 +315,18 @@ class DeepSeekChatProvider @Inject constructor(
 
         try {
             val json = JSONObject(data)
+            
+            // 检查错误
+            if (json.has("error")) {
+                val error = json.getJSONObject("error")
+                trySend(ChatChunk.error(
+                    code = error.optString("code", "UNKNOWN"),
+                    message = error.optString("message", "Unknown error")
+                ))
+                return
+            }
+
+            // 解析选择
             val choices = json.optJSONArray("choices")
             if (choices == null || choices.length() == 0) return
 
@@ -302,7 +340,7 @@ class DeepSeekChatProvider @Inject constructor(
                 return
             }
 
-            // 思考内容
+            // 思考内容（R1 模型）
             val thinking = delta.optString("reasoning_content", "")
             if (thinking.isNotEmpty()) {
                 trySend(ChatChunk.thinking(thinking))

@@ -1,10 +1,14 @@
 package ai.openclaw.android.ui.screens
 
+import ai.openclaw.android.domain.model.AuthState
 import ai.openclaw.android.domain.model.Provider
 import ai.openclaw.android.ui.screens.auth.AuthSelectionScreen
 import ai.openclaw.android.ui.screens.auth.AuthWebViewScreen
+import ai.openclaw.android.ui.screens.chat.ChatScreen
 import ai.openclaw.android.ui.viewmodel.AuthViewModel
+import ai.openclaw.android.ui.viewmodel.ChatViewModel
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -16,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
  * 导航路由
  */
 sealed class Screen(val route: String) {
+    object Chat : Screen("chat")
     object AuthSelection : Screen("auth_selection")
     object AuthWebView : Screen("auth_webview/{providerId}") {
         fun createRoute(providerId: String) = "auth_webview/$providerId"
@@ -28,12 +33,38 @@ sealed class Screen(val route: String) {
 @Composable
 fun MainNavigation(
     navController: NavHostController = rememberNavController(),
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    chatViewModel: ChatViewModel
 ) {
+    val authenticatedProviders by authViewModel.providerAuthStates.collectAsStateWithLifecycle()
+    val hasAuth = authenticatedProviders.values.any { it is AuthState.Authenticated }
+    
+    // 如果没有认证，跳转到登录页面
+    LaunchedEffect(hasAuth) {
+        if (!hasAuth && navController.currentDestination?.route != Screen.AuthSelection.route) {
+            navController.navigate(Screen.AuthSelection.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+    
     NavHost(
         navController = navController,
-        startDestination = Screen.AuthSelection.route
+        startDestination = if (hasAuth) Screen.Chat.route else Screen.AuthSelection.route
     ) {
+        // 聊天页面
+        composable(Screen.Chat.route) {
+            ChatScreen(
+                viewModel = chatViewModel,
+                onNewChat = {
+                    chatViewModel.createNewSession()
+                },
+                onOpenSettings = {
+                    navController.navigate(Screen.AuthSelection.route)
+                }
+            )
+        }
+        
         // 认证选择页面
         composable(Screen.AuthSelection.route) {
             AuthSelectionScreen(
@@ -55,7 +86,9 @@ fun MainNavigation(
                     provider = provider,
                     viewModel = authViewModel,
                     onAuthSuccess = {
-                        navController.popBackStack()
+                        navController.navigate(Screen.Chat.route) {
+                            popUpTo(Screen.AuthSelection.route) { inclusive = true }
+                        }
                     },
                     onAuthCancelled = {
                         authViewModel.cancelAuthentication()
@@ -63,7 +96,6 @@ fun MainNavigation(
                     }
                 )
             } else {
-                // 无效的提供商，返回选择页面
                 navController.popBackStack()
             }
         }
