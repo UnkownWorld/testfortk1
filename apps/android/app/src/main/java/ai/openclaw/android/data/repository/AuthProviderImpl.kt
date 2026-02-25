@@ -18,15 +18,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class AuthProviderImpl @Inject constructor(
-    private val localDataSource: AuthLocalDataSource,
-    private val remoteDataSource: AuthRemoteDataSource
+    private val localDataSource: AuthLocalDataSource
 ) : IAuthProvider {
 
     // 认证状态缓存
     private val authStates = mutableMapOf<String, MutableStateFlow<AuthState>>()
 
     init {
-        // 初始化时加载已保存的认证状态
+        // 初始化时创建所有提供商的状态流
         Provider.values().forEach { provider ->
             authStates[provider.id] = MutableStateFlow(AuthState.NotAuthenticated)
         }
@@ -43,10 +42,29 @@ class AuthProviderImpl @Inject constructor(
                 val config = localDataSource.getAuthConfig(provider.id)
                 if (config != null && config.isValid()) {
                     authStates[provider.id]?.value = AuthState.Authenticated(config)
+                    Timber.d("Loaded auth config for ${provider.id}")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to initialize auth state for ${provider.id}")
             }
+        }
+    }
+
+    /**
+     * 保存认证配置
+     *
+     * 直接保存配置到本地存储（用于 WebView 认证完成后）
+     *
+     * @param config 认证配置
+     */
+    suspend fun saveAuthConfig(config: AuthConfig) {
+        try {
+            localDataSource.saveAuthConfig(config)
+            authStates[config.provider]?.value = AuthState.Authenticated(config)
+            Timber.d("Saved auth config for ${config.provider}")
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to save auth config for ${config.provider}")
+            throw e
         }
     }
 
@@ -77,73 +95,22 @@ class AuthProviderImpl @Inject constructor(
         }
     }
 
-    override fun authenticate(provider: Provider): Flow<AuthState> = channelFlow {
-        // 获取状态流
-        val stateFlow = authStates[provider.id] 
-            ?: MutableStateFlow(AuthState.NotAuthenticated)
-
-        // 更新状态为认证中
-        stateFlow.value = AuthState.Authenticating(provider)
-        send(AuthState.Authenticating(provider))
-
-        try {
-            // 使用远程数据源进行认证
-            remoteDataSource.authenticate(provider)
-                .catch { e ->
-                    Timber.e(e, "Authentication failed for ${provider.id}")
-                    val errorState = AuthState.Error(
-                        code = "AUTH_ERROR",
-                        message = e.message ?: "Authentication failed"
-                    )
-                    stateFlow.value = errorState
-                    send(errorState)
-                }
-                .collect { state ->
-                    when (state) {
-                        is AuthState.Authenticated -> {
-                            // 保存认证配置
-                            localDataSource.saveAuthConfig(state.config)
-                            stateFlow.value = state
-                            send(state)
-                        }
-                        is AuthState.Cancelled -> {
-                            stateFlow.value = state
-                            send(state)
-                        }
-                        is AuthState.Error -> {
-                            stateFlow.value = state
-                            send(state)
-                        }
-                        else -> {
-                            send(state)
-                        }
-                    }
-                }
-        } catch (e: Exception) {
-            Timber.e(e, "Authentication flow failed")
-            val errorState = AuthState.Error(
-                code = "AUTH_FLOW_ERROR",
-                message = e.message ?: "Authentication flow failed"
-            )
-            stateFlow.value = errorState
-            send(errorState)
-        }
+    override fun authenticate(provider: Provider): Flow<AuthState> = flow {
+        // 这个方法现在由 WebView 认证流程处理
+        // 这里只发送一个状态表示需要通过 WebView 认证
+        emit(AuthState.Authenticating(provider))
     }
 
     override suspend fun refresh(provider: Provider): Result<Boolean> {
         return try {
             val currentConfig = getAuthConfig(provider)
-                ?: return Result.failure(Exception("Not authenticated"))
-
-            val newConfig = remoteDataSource.refresh(provider, currentConfig)
-
-            if (newConfig != null) {
+            if (currentConfig != null) {
+                // 更新过期时间
+                val newConfig = currentConfig.withExpiration(AuthConfig.DEFAULT_EXPIRATION_MS)
                 localDataSource.saveAuthConfig(newConfig)
                 authStates[provider.id]?.value = AuthState.Authenticated(newConfig)
                 Result.success(true)
             } else {
-                // 刷新失败，清除认证
-                logout(provider)
                 Result.success(false)
             }
         } catch (e: Exception) {
