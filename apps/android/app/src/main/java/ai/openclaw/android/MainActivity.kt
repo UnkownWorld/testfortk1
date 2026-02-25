@@ -3,6 +3,8 @@ package ai.openclaw.android
 import ai.openclaw.android.ui.screens.MainNavigation
 import ai.openclaw.android.ui.viewmodel.AuthViewModel
 import ai.openclaw.android.ui.viewmodel.ChatViewModel
+import ai.openclaw.android.ui.viewmodel.SessionsViewModel
+import ai.openclaw.android.ui.viewmodel.SettingsViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,9 +34,14 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val chatViewModel: ChatViewModel = hiltViewModel()
+                    val sessionsViewModel: SessionsViewModel = hiltViewModel()
+                    val settingsViewModel: SettingsViewModel = hiltViewModel()
+                    
                     MainNavigation(
                         authViewModel = authViewModel,
-                        chatViewModel = chatViewModel
+                        chatViewModel = chatViewModel,
+                        sessionsViewModel = sessionsViewModel,
+                        settingsViewModel = settingsViewModel
                     )
                 }
             }

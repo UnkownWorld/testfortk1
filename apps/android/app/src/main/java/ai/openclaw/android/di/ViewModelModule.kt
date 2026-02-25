@@ -5,6 +5,8 @@ import ai.openclaw.android.domain.usecase.ChatUseCase
 import ai.openclaw.android.domain.usecase.SessionUseCase
 import ai.openclaw.android.ui.viewmodel.AuthViewModel
 import ai.openclaw.android.ui.viewmodel.ChatViewModel
+import ai.openclaw.android.ui.viewmodel.SessionsViewModel
+import ai.openclaw.android.ui.viewmodel.SettingsViewModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,5 +36,21 @@ object ViewModelModule {
         authUseCase: AuthUseCase
     ): ChatViewModel {
         return ChatViewModel(chatUseCase, sessionUseCase, authUseCase)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideSessionsViewModel(
+        sessionUseCase: SessionUseCase
+    ): SessionsViewModel {
+        return SessionsViewModel(sessionUseCase)
+    }
+
+    @Provides
+    @ViewModelScoped
+    fun provideSettingsViewModel(
+        authUseCase: AuthUseCase
+    ): SettingsViewModel {
+        return SettingsViewModel(authUseCase)
     }
 }

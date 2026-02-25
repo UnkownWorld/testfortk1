@@ -5,8 +5,12 @@ import ai.openclaw.android.domain.model.Provider
 import ai.openclaw.android.ui.screens.auth.AuthSelectionScreen
 import ai.openclaw.android.ui.screens.auth.AuthWebViewScreen
 import ai.openclaw.android.ui.screens.chat.ChatScreen
+import ai.openclaw.android.ui.screens.sessions.SessionsScreen
+import ai.openclaw.android.ui.screens.settings.SettingsScreen
 import ai.openclaw.android.ui.viewmodel.AuthViewModel
 import ai.openclaw.android.ui.viewmodel.ChatViewModel
+import ai.openclaw.android.ui.viewmodel.SessionsViewModel
+import ai.openclaw.android.ui.viewmodel.SettingsViewModel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +29,8 @@ sealed class Screen(val route: String) {
     object AuthWebView : Screen("auth_webview/{providerId}") {
         fun createRoute(providerId: String) = "auth_webview/$providerId"
     }
+    object Sessions : Screen("sessions")
+    object Settings : Screen("settings")
 }
 
 /**
@@ -34,7 +40,9 @@ sealed class Screen(val route: String) {
 fun MainNavigation(
     navController: NavHostController = rememberNavController(),
     authViewModel: AuthViewModel,
-    chatViewModel: ChatViewModel
+    chatViewModel: ChatViewModel,
+    sessionsViewModel: SessionsViewModel,
+    settingsViewModel: SettingsViewModel
 ) {
     val authenticatedProviders by authViewModel.providerAuthStates.collectAsStateWithLifecycle()
     val hasAuth = authenticatedProviders.values.any { it is AuthState.Authenticated }
@@ -60,7 +68,7 @@ fun MainNavigation(
                     chatViewModel.createNewSession()
                 },
                 onOpenSettings = {
-                    navController.navigate(Screen.AuthSelection.route)
+                    navController.navigate(Screen.Settings.route)
                 }
             )
         }
@@ -98,6 +106,36 @@ fun MainNavigation(
             } else {
                 navController.popBackStack()
             }
+        }
+        
+        // 会话历史页面
+        composable(Screen.Sessions.route) {
+            SessionsScreen(
+                viewModel = sessionsViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSessionSelected = { sessionId ->
+                    chatViewModel.loadSession(sessionId)
+                    navController.navigate(Screen.Chat.route) {
+                        popUpTo(Screen.Chat.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        // 设置页面
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onLoginClick = { provider ->
+                    authViewModel.startAuthentication(provider)
+                    navController.navigate(Screen.AuthWebView.createRoute(provider.id))
+                }
+            )
         }
     }
 }
